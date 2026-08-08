@@ -28,6 +28,7 @@ import json
 import os
 import re
 import secrets
+import sys
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -49,6 +50,15 @@ JOB_TTL_SECONDS = int(os.getenv("JOB_TTL_SECONDS", "3600"))
 app = FastAPI(title="Investor Conviction Ladder", docs_url=None, redoc_url=None)
 _basic = HTTPBasic(auto_error=False)
 _semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+
+# Say it at boot, in the deploy log, rather than letting every upload discover
+# it one at a time. Uvicorn's stderr is what Railway shows.
+if not (os.getenv("ANTHROPIC_API_KEY") or "").strip():
+    print(
+        f"WARNING: {engine.no_credentials_message()}",
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 # --- Auth ---------------------------------------------------------------------

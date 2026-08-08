@@ -24,10 +24,12 @@ import conviction_ladder as cl
 # project root would otherwise find nothing and the SDK would fail to resolve
 # credentials. A missing path is a no-op, which is the Railway case — there the
 # real environment already holds the variables.
+ENV_PATH = Path(__file__).with_name(".env")
+
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).with_name(".env"))
+    load_dotenv(ENV_PATH)
 except ModuleNotFoundError:  # pragma: no cover - optional convenience
     pass
 
@@ -53,13 +55,36 @@ class AnalysisError(RuntimeError):
     """Raised for problems the caller should surface to a user verbatim."""
 
 
-NO_CREDENTIALS_MESSAGE = (
-    "No Anthropic credentials found. Set ANTHROPIC_API_KEY in the environment, "
-    "in the project's .env file, or in the deployment's variables — e.g. in "
-    "PowerShell:\n"
-    '    $env:ANTHROPIC_API_KEY = "sk-ant-..."\n'
-    "Get a key at https://console.anthropic.com/settings/keys"
-)
+def is_deployed() -> bool:
+    """True when running on the hosting platform rather than a dev machine.
+
+    Railway injects RAILWAY_* into every service. The `.env` check is the
+    backstop: it is gitignored, so it is never part of the deployed image.
+    """
+    return any(k.startswith("RAILWAY_") for k in os.environ) or not ENV_PATH.exists()
+
+
+def no_credentials_message() -> str:
+    """The fix for a missing key, phrased for wherever this is running.
+
+    On the server, telling someone to export a shell variable is useless — the
+    process is already up and the only lever is the platform's variables tab.
+    """
+    if is_deployed():
+        return (
+            "The server has no Anthropic API key configured. Add "
+            "ANTHROPIC_API_KEY in the Railway service's Variables tab and "
+            "redeploy. The project's .env is gitignored, so it is never part "
+            "of the deployed image — the variable has to be set on the service "
+            "itself. Get a key at https://console.anthropic.com/settings/keys"
+        )
+    return (
+        "No Anthropic credentials found.\n"
+        f"Add ANTHROPIC_API_KEY to {ENV_PATH} (copy .env.example), or set it "
+        "in the environment:\n"
+        '    $env:ANTHROPIC_API_KEY = "sk-ant-..."\n'
+        "Get a key at https://console.anthropic.com/settings/keys"
+    )
 
 
 def build_client(api_key: str | None = None) -> anthropic.Anthropic:
@@ -76,14 +101,14 @@ def build_client(api_key: str | None = None) -> anthropic.Anthropic:
         key = key.strip()
 
     if not key and not (os.getenv("ANTHROPIC_AUTH_TOKEN") or "").strip():
-        raise AnalysisError(NO_CREDENTIALS_MESSAGE)
+        raise AnalysisError(no_credentials_message())
 
     try:
         return anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
     except TypeError as e:  # SDK's unresolved-credentials guard
         if "authentication method" not in str(e):
             raise
-        raise AnalysisError(NO_CREDENTIALS_MESSAGE) from e
+        raise AnalysisError(no_credentials_message()) from e
 
 
 def validate_pdf(data: bytes, filename: str = "deck.pdf") -> None:
