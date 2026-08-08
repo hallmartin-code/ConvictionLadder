@@ -122,16 +122,14 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         run(args.pdf, output, args.json_path, args.effort, args.from_json)
-    except (anthropic.AuthenticationError, TypeError) as e:
-        # No resolvable credentials surface as a TypeError before the request;
-        # a bad/expired key surfaces as AuthenticationError from the 401.
-        if isinstance(e, TypeError) and "authentication method" not in str(e):
-            raise
+    except anthropic.AuthenticationError:
+        # A missing key never gets this far — engine.build_client turns that
+        # into an AnalysisError. This is the 401: a key that is set but wrong,
+        # revoked, or from the wrong workspace.
         print(
-            "\nNo Anthropic credentials found.\n"
-            "Set an API key and re-run, e.g. in PowerShell:\n"
-            '    $env:ANTHROPIC_API_KEY = "sk-ant-..."\n'
-            "Get a key at https://console.anthropic.com/settings/keys",
+            "\nAnthropic rejected the credentials (401). The key in "
+            "ANTHROPIC_API_KEY is invalid, revoked, or truncated.\n"
+            "Check it at https://console.anthropic.com/settings/keys",
             file=sys.stderr,
         )
         return 1

@@ -192,7 +192,7 @@ async def healthz() -> dict:
     return {
         "ok": True,
         "model": engine.MODEL,
-        "api_key_configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "api_key_configured": bool((os.getenv("ANTHROPIC_API_KEY") or "").strip()),
         "auth_enabled": bool(APP_PASSWORD),
         "active_jobs": sum(1 for j in JOBS.values() if j.status in
                            ("queued", "running")),

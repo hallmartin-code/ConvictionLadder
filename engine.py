@@ -10,18 +10,24 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+from pathlib import Path
 from typing import Callable
 
 import anthropic
 
 import conviction_ladder as cl
 
-# Load .env for local dev if python-dotenv is installed. On Railway the real
-# environment already holds the variables, and there is no .env to find.
+# Load .env for local dev if python-dotenv is installed. Point at the file next
+# to this module rather than letting dotenv walk up from the current directory:
+# `uvicorn web:app` or `python ...\analyze.py` started from anywhere but the
+# project root would otherwise find nothing and the SDK would fail to resolve
+# credentials. A missing path is a no-op, which is the Railway case — there the
+# real environment already holds the variables.
 try:
     from dotenv import load_dotenv
 
-    load_dotenv()
+    load_dotenv(Path(__file__).with_name(".env"))
 except ModuleNotFoundError:  # pragma: no cover - optional convenience
     pass
 
@@ -45,6 +51,39 @@ EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"]
 
 class AnalysisError(RuntimeError):
     """Raised for problems the caller should surface to a user verbatim."""
+
+
+NO_CREDENTIALS_MESSAGE = (
+    "No Anthropic credentials found. Set ANTHROPIC_API_KEY in the environment, "
+    "in the project's .env file, or in the deployment's variables — e.g. in "
+    "PowerShell:\n"
+    '    $env:ANTHROPIC_API_KEY = "sk-ant-..."\n'
+    "Get a key at https://console.anthropic.com/settings/keys"
+)
+
+
+def build_client(api_key: str | None = None) -> anthropic.Anthropic:
+    """Construct the SDK client, or fail with a message a user can act on.
+
+    With nothing to authenticate with, the SDK raises a bare TypeError
+    ("Could not resolve authentication method...") at construction time. Catch
+    the empty case here so both front ends report the fix instead of a
+    traceback. An env var set to an empty or whitespace-only string is the same
+    situation as an unset one, but the SDK would carry it as far as a 401.
+    """
+    key = api_key if api_key is not None else os.getenv("ANTHROPIC_API_KEY")
+    if key is not None:
+        key = key.strip()
+
+    if not key and not (os.getenv("ANTHROPIC_AUTH_TOKEN") or "").strip():
+        raise AnalysisError(NO_CREDENTIALS_MESSAGE)
+
+    try:
+        return anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
+    except TypeError as e:  # SDK's unresolved-credentials guard
+        if "authentication method" not in str(e):
+            raise
+        raise AnalysisError(NO_CREDENTIALS_MESSAGE) from e
 
 
 def validate_pdf(data: bytes, filename: str = "deck.pdf") -> None:
@@ -159,7 +198,7 @@ def analyze_pdf_bytes(
 ) -> dict:
     """Validate, analyze, and normalize. Returns the report-ready dict."""
     validate_pdf(data)
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+    client = build_client(api_key)
     pdf_b64 = base64.standard_b64encode(data).decode("utf-8")
     raw = call_model(client, pdf_b64, effort, on_progress, on_note)
     return cl.normalize(raw)
