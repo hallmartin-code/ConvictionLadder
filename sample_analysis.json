@@ -1,0 +1,102 @@
+{
+  "company_name": "NovaSynth AI",
+  "stages": [
+    {
+      "number": 1,
+      "name": "Pattern Interrupt",
+      "score": 4,
+      "evidence": "Opens with a bold stat: '40% of enterprise software spend is wasted on tools nobody uses.' Clear problem-first framing.",
+      "gap": "The disruption claim relies on a trend (AI consolidation) that every other deck is using. Not unique.",
+      "question": "Why is this the moment? What specifically changed in the last 12 months that makes this inevitable now?",
+      "fix": "Replace the generic AI trend hook with a specific, verifiable customer story from a named logo."
+    },
+    {
+      "number": 2,
+      "name": "Problem Belief",
+      "score": 4,
+      "evidence": "Highlights $120B annual waste in SaaS sprawl with a Gartner cite. Shows workflow fragmentation pain via a 12-app screenshot.",
+      "gap": "No named customer quoted. Pain is described at category level, not buyer level. Who specifically loses their job over this?",
+      "question": "Can you name three specific buyers who told you this was a top-3 priority this quarter?",
+      "fix": "Add 2-3 verbatim customer quotes with name/title/company. Show churn data tied directly to the problem."
+    },
+    {
+      "number": 3,
+      "name": "Solution Credibility",
+      "score": 3,
+      "evidence": "Product screenshot exists. Claims 'AI-native unification layer' with a live demo link.",
+      "gap": "No benchmark data. 'AI-native' is used 11 times in the deck — becomes noise. No explanation of what the model actually does.",
+      "question": "What specifically does the AI do that a simple API integration doesn't? Show me the before/after workflow.",
+      "fix": "Add one quantified proof point: 'Customers save X hours/week or reduce tool spend by Y%.' Kill the buzzwords."
+    },
+    {
+      "number": 4,
+      "name": "Founder Credibility",
+      "score": 4,
+      "evidence": "CEO previously built and sold a SaaS integration tool (acquired by Salesforce 2019). CTO is ex-Stripe infra lead.",
+      "gap": "No mention of why this specific team builds this better than a Salesforce or HubSpot internal team.",
+      "question": "You sold your last company to Salesforce — why didn't you just build this inside Salesforce?",
+      "fix": "Add a 'Why Us' slide that explicitly connects each founder's background to an unfair advantage in this market."
+    },
+    {
+      "number": 5,
+      "name": "Market Upside",
+      "score": 2,
+      "evidence": "Claims $45B TAM for enterprise software management tools.",
+      "gap": "TAM is top-down and sourced from a single 2021 IDC report. No bottom-up build. No explanation of how they capture any of it.",
+      "question": "Walk me through the bottom-up: how many customers at what ACV gets you to $1M ARR?",
+      "fix": "Replace the TAM slide with a bottoms-up model: ICP count x win rate x ACV = realistic $1M, $10M, $50M ARR path."
+    },
+    {
+      "number": 6,
+      "name": "Differentiation & Defensibility",
+      "score": 2,
+      "evidence": "Claims 'proprietary integration fabric' and mentions 200+ pre-built connectors.",
+      "gap": "Zapier, Make, and Workato all have 5,000+ connectors. No moat articulated. No switching cost described.",
+      "question": "If Zapier launches an AI layer tomorrow, why doesn't your customer churn immediately?",
+      "fix": "Articulate the specific lock-in mechanism: workflow data flywheel, seat expansion economics, or compliance moat. Name it."
+    },
+    {
+      "number": 7,
+      "name": "Traction Validation",
+      "score": 3,
+      "evidence": "18 paying customers, $420K ARR, 140% NRR. Named two Fortune 500 logos in pipeline.",
+      "gap": "No cohort data. No churn rate. Pipeline logos are 'in evaluation' — not closed. ARR growth rate not shown.",
+      "question": "What's your monthly churn rate? Show me the last 6 months of ARR growth month-by-month.",
+      "fix": "Add a single slide: MoM ARR growth chart, gross/net churn, and CAC payback period. This is the most important slide in the deck."
+    },
+    {
+      "number": 8,
+      "name": "Risk Framing",
+      "score": 1,
+      "evidence": "No risks section found in the deck.",
+      "gap": "Zero mention of competitive risk, technical debt, go-to-market risk, or burn rate. This reads as naive or evasive.",
+      "question": "What keeps you up at night? What's the scenario where this fails in 18 months?",
+      "fix": "Add a 'Risks & Mitigations' slide with 3-4 real risks and specific mitigation plans. Investors trust founders who name risk."
+    },
+    {
+      "number": 9,
+      "name": "Deal Logic",
+      "score": 4,
+      "evidence": "Raising $4M Seed at $18M pre. 18-month runway. Use of funds broken out: 60% product, 30% GTM, 10% ops.",
+      "gap": "No milestone targets stated. '$4M gets us to Series A' — but what metrics define Series A readiness?",
+      "question": "What are the 3 specific metrics you'll hit by month 18 that make your Series A obvious?",
+      "fix": "Add milestone targets: '$4M gets us to $2M ARR, 50 customers, and 120% NRR — all Series A benchmarks for our space.'"
+    },
+    {
+      "number": 10,
+      "name": "Personal Commitment",
+      "score": 4,
+      "evidence": "Closing slide has a strong vision statement. Team is clearly passionate about the problem based on founder bios.",
+      "gap": "No personal financial commitment mentioned. No evidence founders have turned down other opportunities.",
+      "question": "What have you personally sacrificed to be here? Why this, why now, why you?",
+      "fix": "Close with a 30-second personal story that makes investors feel this team can't not build this company."
+    }
+  ],
+  "diagnosis": {
+    "conviction_breaks_at": "Stage 5 (Market Upside) — top-down TAM with no bottom-up undermines the 'fund-returnable' test. Stage 6 (Defensibility) compounds the doubt: no moat = no durable business.",
+    "partner_meeting": "Unlikely",
+    "biggest_red_flag": "Zero risk acknowledgment in a competitive space. Reads as either naive or dishonest — both are disqualifying.",
+    "highest_leverage": "Replace slide 6 with a defensibility slide that names the specific lock-in mechanism and backs it with data (workflow recreation hours, data portability limits, compliance certifications).",
+    "increase_p_invest": "Add a bottom-up TAM model showing the path to $10M ARR, and explicitly name the switching cost mechanism that locks customers in."
+  }
+}
