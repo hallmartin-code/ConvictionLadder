@@ -66,6 +66,9 @@ The repo already contains everything Railway needs: `Procfile`,
    | `ANTHROPIC_API_KEY` | your key from the Claude console |
    | `APP_PASSWORD` | a long random string — see the warning below |
    | `APP_USERNAME` | optional, defaults to `ten` |
+   | `RESEND_API_KEY` | optional — enables emailing each report |
+   | `REPORT_EMAIL_TO` | optional, defaults to `Info@tencapital.group` |
+   | `REPORT_EMAIL_FROM` | required if emailing; must be on a Resend-verified domain |
 
    Railway injects `PORT` itself; don't set it.
 
@@ -147,13 +150,83 @@ curl -u ten:$env:APP_PASSWORD -F "deck=@deck.pdf" -F "effort=high" `
 
 | File | Purpose |
 | --- | --- |
-| `web.py` | FastAPI app, job queue, and the upload page |
+| `web.py` | FastAPI app and job queue |
+| `index.html` | The upload page — brand, all four UI states, styling |
+| `static/` | Favicon set and brand assets, served at `/static` |
 | `analyze.py` | CLI |
 | `engine.py` | Shared core: validation, the API call, normalization |
 | `conviction_ladder.py` | Stage definitions, scoring rubric, prompt, JSON schema |
 | `report_pdf.py` | The one-page PDF layout |
+| `mailer.py` | Emails the finished report via Resend |
 | `sample_analysis.json` | Fixture for testing the renderer without an API key |
 | `Procfile`, `railway.json`, `.python-version` | Railway deployment |
+
+## Emailing reports
+
+Set `RESEND_API_KEY` and every finished analysis is emailed automatically: a
+summary in the body (score, verdict, the ten stage scores, the full diagnosis)
+with the one-page PDF attached. Leave the key unset and the feature is inert.
+
+| Variable | Purpose |
+| --- | --- |
+| `RESEND_API_KEY` | Enables sending. From <https://resend.com/api-keys> |
+| `REPORT_EMAIL_TO` | Recipients, comma-separated. Default `Info@tencapital.group` |
+| `REPORT_EMAIL_FROM` | Sender. **Must be on a domain verified at <https://resend.com/domains>** |
+| `REPORT_EMAIL_CC` | Optional, comma-separated |
+
+`tencapital.group` is verified, so `reports@tencapital.group` sends fine — the
+address needs no mailbox, only the verified domain. Resend's shared
+`onboarding@resend.dev` sender only delivers to the Resend account owner, so
+it is not usable for team delivery.
+
+**Emailing never blocks a report.** The send runs after the job is marked done
+and the PDF is already downloadable. A failure is recorded on the job, shown
+in the UI, and logged to stderr — the analysis is never lost to a mail problem.
+
+On the CLI it is opt-in via `--email`, so local experiments don't mail the team
+on every run.
+
+## Brand assets
+
+`static/` holds the favicon set, generated from the TEN Capital circle mark:
+
+| File | Used for |
+| --- | --- |
+| `favicon.ico` | Multi-resolution (16/32/48) for browser tabs and Windows |
+| `favicon-16.png`, `favicon-32.png` | Modern browser tab icons |
+| `apple-touch-icon.png` | iOS home screen, 180×180 on the app's navy |
+| `icon-512.png`, `favicon-192.png` | Large sizes, e.g. a web manifest |
+| `logo-source.png` | The trimmed, squared master the rest were cut from |
+
+It's mounted at `/static` **without** the auth gate — the browser fetches the
+favicon before you've logged in, and gating it just yields a blank tab icon on
+the password prompt. Nothing in the directory is sensitive. `/favicon.ico` is
+also served from the root, for clients that probe there instead of reading the
+`<link>` tags.
+
+To regenerate from a new master, trim to the artwork's bounding box before
+downscaling — the source PNG carries transparent padding that swallows the
+glyph at 16px.
+
+## Editing the UI
+
+The page is `index.html`, loaded once at startup by `web.py`. Edit it and
+restart — no Python changes needed. Two placeholders are substituted at load:
+`{{MAX_BYTES}}` and `{{MAX_MB}}`, both derived from `engine.MAX_PDF_BYTES`, so
+the size limit in the copy can never drift from the one the server enforces.
+
+It has four states, swapped by the `view()` helper: `view-upload`,
+`view-working`, `view-error`, `view-result`. Each is a `.card` inside
+`#stage`; only one is visible at a time.
+
+Design tokens are CSS custom properties on `:root` — navy surfaces, and
+coral/amber/teal accents matching the TEN Capital mark. Score and verdict
+colours are also mirrored in the JS (`SCORE_COLOR`, `VERDICT_COLOR`); change
+both together.
+
+Note the printed PDF keeps its own light palette. It's a document meant to be
+read and forwarded, not a screen, and it matches the report format already in
+use.
 
 ## How it works
 

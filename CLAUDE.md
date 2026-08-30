@@ -11,6 +11,9 @@ document standards and the conversational prompt suite.
 - `web.py` — FastAPI app (upload page + job API), deployed on Railway
 - `analyze.py` — CLI, a thin wrapper over `engine`
 - `conviction_ladder.py` — stage definitions, deduction rubric, prompt, JSON schema
+- `index.html` — the web UI: brand, four view states, all styling
+- `static/` — favicon set and brand assets, served at `/static`
+- `mailer.py` — Resend delivery of the finished report
 - `report_pdf.py` — the reportlab layout
 - `sample_analysis.json` — fixture for rendering without an API key
 
@@ -45,6 +48,24 @@ there, not in `web.py` or `analyze.py`, so the two stay in step.
   test before assuming it still fits.
 
 ## Web app conventions
+
+- **`/static` is deliberately unauthenticated.** The favicon is fetched before
+  login; gating it only produces a blank tab icon on the password prompt. Keep
+  it to brand assets — anything sensitive does not belong there.
+
+- **The UI lives in `index.html`, not in Python.** `web.py` reads it once at
+  import and substitutes `{{MAX_BYTES}}`/`{{MAX_MB}}` from
+  `engine.MAX_PDF_BYTES`. Never hardcode the upload limit in the copy — it
+  would drift from the limit the server actually enforces.
+- **Data egress is one explicit, configured destination.** The deck goes to
+  Anthropic; the report goes to the browser and, when `RESEND_API_KEY` is set,
+  to `REPORT_EMAIL_TO` (a TEN Capital address). Don't add further recipients,
+  forwarding, or third-party copies — these are confidential deal documents,
+  and the recipient must stay something an operator configured, never something
+  hardcoded or inherited from a design asset.
+- **Emailing is a side errand, never a gate.** Send after the job is marked
+  done and the PDF is downloadable. A `MailError` is recorded on the job and
+  logged; it must never fail the analysis the user is waiting on.
 
 - **Never accept an API key from the browser.** The key is server-side only,
   read from `ANTHROPIC_API_KEY`. There is deliberately no field for one.

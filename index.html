@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TEN Capital Network — Conviction Ladder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/static/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<meta name="theme-color" content="#0B1526">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#0B1526; --navy-900:#101E33; --navy-800:#16283F; --navy-700:#1E354F;
+    --coral:#EE5A4E; --coral-soft:#F0776C; --amber:#F3A22A; --teal:#35BEBB;
+    --ink-100:#F3F6FA; --ink-300:#C4D0E0; --ink-500:#7E90A8; --ink-600:#5C6E86;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --display:'Sora',var(--sans);
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    background:var(--navy-950); color:var(--ink-100);
+    font-family:var(--sans); min-height:100vh;
+  }
+
+  body{
+    display:flex; align-items:center; justify-content:center;
+    padding:48px 20px; position:relative; overflow-x:hidden;
+  }
+
+  /* ambient tri-color glow, echoing the logo's three figures */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(480px 380px at 14% 8%, rgba(238,90,78,0.16), transparent 60%),
+      radial-gradient(480px 380px at 86% 6%, rgba(243,162,42,0.13), transparent 60%),
+      radial-gradient(560px 420px at 50% 100%, rgba(53,190,187,0.14), transparent 60%);
+  }
+
+  .stage{
+    position:relative; z-index:1; width:100%; max-width:620px;
+    transition:max-width .35s cubic-bezier(.2,.8,.2,1);
+  }
+  .stage.wide{ max-width:900px; }
+
+  /* brand lockup */
+  .brand{ display:flex; align-items:center; gap:12px; margin-bottom:28px; padding-left:4px; }
+  .brand-mark{ width:34px; height:34px; flex-shrink:0; }
+  .brand-word{
+    font-family:var(--display); font-weight:800; font-size:15px;
+    letter-spacing:.04em; line-height:1.15; color:var(--ink-100); text-transform:uppercase;
+  }
+  .brand-word span{
+    display:block; font-weight:600; font-size:10px; letter-spacing:.22em;
+    color:var(--ink-500); margin-top:2px;
+  }
+
+  .card{
+    background:linear-gradient(180deg,var(--navy-900) 0%,var(--navy-800) 100%);
+    border:1px solid var(--navy-700); border-radius:20px;
+    padding:44px 44px 36px; position:relative; overflow:hidden;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .card::after{
+    content:""; position:absolute; top:-2px; left:44px; right:44px; height:2px;
+    background:linear-gradient(90deg,var(--coral),var(--amber),var(--teal));
+    border-radius:2px;
+  }
+
+  .eyebrow{
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--teal); margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:""; width:6px; height:6px; border-radius:50%; background:var(--teal);
+    box-shadow:0 0 0 3px rgba(53,190,187,.18); flex-shrink:0;
+  }
+  .eyebrow.working::before{ animation:pulse 1.4s ease-in-out infinite; }
+  .eyebrow.bad{ color:var(--coral-soft); }
+  .eyebrow.bad::before{ background:var(--coral-soft); box-shadow:0 0 0 3px rgba(240,119,108,.18); }
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  h1{
+    font-family:var(--display); font-size:28px; font-weight:700; line-height:1.25;
+    margin:0 0 12px; letter-spacing:-.01em;
+  }
+  h1 .arrow{ color:var(--ink-500); font-weight:400; margin:0 4px; }
+  h1 .to{
+    background:linear-gradient(90deg,var(--coral-soft),var(--amber));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+
+  .lede{ color:var(--ink-300); font-size:15px; line-height:1.6; margin:0 0 32px; max-width:46ch; }
+
+  /* dropzone */
+  .dropzone{
+    display:block; border:1.5px dashed var(--navy-700); border-radius:14px;
+    padding:38px 24px; text-align:center; cursor:pointer;
+    background:rgba(255,255,255,.015);
+    transition:border-color .18s ease, background .18s ease, transform .18s ease;
+  }
+  .dropzone:hover,.dropzone.over{ border-color:var(--teal); background:rgba(53,190,187,.05); }
+  .dropzone:active{ transform:scale(.997); }
+  .dropzone.loaded{ border-style:solid; border-color:var(--teal); background:rgba(53,190,187,.06); }
+
+  .dropzone-icon{
+    width:38px; height:38px; margin:0 auto 14px; border-radius:10px;
+    background:linear-gradient(135deg,rgba(238,90,78,.16),rgba(243,162,42,.16));
+    border:1px solid var(--navy-700);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dropzone-icon svg{ width:18px; height:18px; }
+  .dropzone-title{ font-size:15px; font-weight:600; color:var(--ink-100); margin-bottom:6px; }
+  .dropzone-sub{ font-family:var(--mono); font-size:11.5px; color:var(--ink-500); letter-spacing:.01em; }
+  .dropzone-sub b{ color:var(--ink-300); font-weight:500; }
+  .file-input{ display:none; }
+
+  /* effort control */
+  .controls{ display:flex; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap; }
+  .controls label{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-500);
+  }
+  .seg{
+    display:flex; gap:4px; background:var(--navy-950);
+    border:1px solid var(--navy-700); border-radius:10px; padding:4px;
+  }
+  .seg button{
+    font-family:var(--mono); font-size:11.5px; padding:6px 11px; border-radius:7px;
+    border:0; background:transparent; color:var(--ink-500); cursor:pointer; transition:.15s;
+  }
+  .seg button:hover{ color:var(--ink-100); }
+  .seg button[aria-pressed="true"]{ background:var(--navy-700); color:var(--ink-100); }
+
+  /* CTA */
+  .cta{
+    width:100%; margin-top:22px; padding:16px 20px; border:none; border-radius:12px;
+    background:linear-gradient(90deg,var(--coral) 0%,var(--coral-soft) 45%,var(--amber) 100%);
+    color:#17130E; font-family:var(--display); font-weight:700; font-size:15px;
+    letter-spacing:.01em; cursor:pointer;
+    transition:filter .15s ease, transform .15s ease, opacity .15s ease;
+    box-shadow:0 10px 24px -10px rgba(238,90,78,.45);
+  }
+  .cta:hover:not(:disabled){ filter:brightness(1.06); transform:translateY(-1px); }
+  .cta:active:not(:disabled){ transform:translateY(0); }
+  .cta:disabled{ opacity:.32; cursor:not-allowed; box-shadow:none; }
+
+  .btn-row{ display:flex; gap:10px; margin-top:26px; flex-wrap:wrap; }
+  .btn{
+    flex:1; min-width:150px; padding:13px 18px; border-radius:11px; cursor:pointer;
+    font-family:var(--display); font-weight:700; font-size:14px; transition:.15s;
+    border:1px solid var(--navy-700); background:var(--navy-950); color:var(--ink-100);
+  }
+  .btn:hover{ border-color:var(--teal); color:#fff; }
+  .btn.primary{
+    border:0; color:#17130E;
+    background:linear-gradient(90deg,var(--coral) 0%,var(--coral-soft) 45%,var(--amber) 100%);
+    box-shadow:0 10px 24px -10px rgba(238,90,78,.45);
+  }
+  .btn.primary:hover{ filter:brightness(1.06); }
+
+  /* progress */
+  .track{
+    height:3px; border-radius:2px; background:var(--navy-700);
+    overflow:hidden; margin:26px 0 16px;
+  }
+  .track i{
+    display:block; height:100%; width:38%; border-radius:2px;
+    background:linear-gradient(90deg,var(--coral),var(--amber),var(--teal));
+    animation:slide 1.5s cubic-bezier(.5,0,.5,1) infinite;
+  }
+  @keyframes slide{ 0%{margin-left:-38%} 100%{margin-left:100%} }
+
+  .meta{
+    display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:11.5px; color:var(--ink-500);
+  }
+
+  /* error */
+  .alert{
+    border:1px solid rgba(238,90,78,.4); background:rgba(238,90,78,.08);
+    border-radius:12px; padding:16px 18px; color:var(--ink-100);
+    font-size:14px; line-height:1.6; white-space:pre-wrap;
+  }
+
+  /* results */
+  .score-hero{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+  .score-num{
+    font-family:var(--display); font-size:52px; font-weight:800;
+    line-height:1; letter-spacing:-.02em;
+  }
+  .score-den{ font-family:var(--mono); font-size:14px; color:var(--ink-500); }
+  .pill{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    padding:6px 13px; border-radius:20px; color:#0B1526; font-weight:500;
+  }
+  .company{
+    font-family:var(--display); font-weight:600; font-size:16px;
+    color:var(--ink-300); margin-left:auto;
+  }
+
+  table{ width:100%; border-collapse:collapse; margin-top:26px; }
+  thead th{
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-500); text-align:left; padding:0 10px 9px;
+    border-bottom:1px solid var(--navy-700); font-weight:500;
+  }
+  tbody td{ padding:9px 10px; border-bottom:1px solid rgba(30,53,79,.5); font-size:13.5px; }
+  tbody tr:last-child td{ border-bottom:0; }
+  td.n{ font-family:var(--mono); color:var(--ink-600); width:34px; font-size:12px; }
+  td.sc{ font-family:var(--mono); font-weight:500; text-align:center; width:60px; }
+  td.st{ text-align:right; width:130px; font-size:12.5px; }
+
+  dl{ margin:28px 0 0; padding-top:22px; border-top:1px solid var(--navy-700); }
+  dt{
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--teal); margin-bottom:5px;
+  }
+  dd{ margin:0 0 18px; font-size:14px; line-height:1.6; color:var(--ink-300); }
+  dd:last-child{ margin-bottom:0; }
+  dd.flag{ color:var(--coral-soft); font-weight:500; }
+
+  .mailnote{
+    margin-top:18px; font-family:var(--mono); font-size:11px;
+    color:var(--ink-500); line-height:1.5;
+  }
+  .mailnote::before{ content:'¸9 a0 a0'; }
+  .mailnote.warn{ color:var(--amber); }
+
+  .disclosure{
+    margin-top:22px; padding-top:18px; border-top:1px solid var(--navy-700);
+    font-size:12px; line-height:1.6; color:var(--ink-500);
+  }
+
+  footer{
+    text-align:center; margin-top:22px; font-family:var(--mono); font-size:11px;
+    letter-spacing:.08em; color:var(--ink-600); text-transform:uppercase;
+  }
+
+  .hidden{ display:none !important; }
+
+  @media (max-width:560px){
+    .card{ padding:32px 24px 28px; }
+    .card::after{ left:24px; right:24px; }
+    h1{ font-size:23px; }
+    .company{ margin-left:0; }
+    td.st{ width:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 6 C64 6 74 16 74 16" stroke="var(--amber)" stroke-width="11" stroke-linecap="round" fill="none"/>
+      <path d="M76 66 C76 82 63 92 63 92" stroke="var(--teal)" stroke-width="11" stroke-linecap="round" fill="none"/>
+      <path d="M24 66 C24 82 37 92 37 92" stroke="var(--coral)" stroke-width="11" stroke-linecap="round" fill="none" transform="rotate(180 50 79)"/>
+      <circle cx="50" cy="20" r="11" fill="var(--amber)"/>
+      <circle cx="78" cy="68" r="11" fill="var(--teal)"/>
+      <circle cx="22" cy="68" r="11" fill="var(--coral)"/>
+    </svg>
+    <div class="brand-word">Ten Capital<span>Network</span></div>
+  </div>
+
+  <!-- ============ UPLOAD ============ -->
+  <div class="card" id="view-upload">
+    <div class="eyebrow">Deck Analyzer</div>
+    <h1>Pitch Deck<span class="arrow">&rarr;</span><span class="to">Investor One&#8209;Pager</span></h1>
+    <p class="lede">Upload a pitch deck and get a polished single-page investor PDF, scored against the TEN Capital Conviction Ladder by Claude.</p>
+
+    <label class="dropzone" id="drop" for="deck-upload">
+      <div class="dropzone-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink-100)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+          <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/>
+        </svg>
+      </div>
+      <div class="dropzone-title" id="drop-title">Drop a deck here, or click to choose</div>
+      <div class="dropzone-sub" id="drop-sub"><b>.pdf</b> &nbsp;&middot;&nbsp; up to {{MAX_MB}}&nbsp;MB</div>
+      <input class="file-input" type="file" id="deck-upload" accept="application/pdf,.pdf">
+    </label>
+
+    <div class="controls">
+      <label>Effort</label>
+      <div class="seg" id="effort" role="group" aria-label="Model effort">
+        <button type="button" data-v="low">low</button>
+        <button type="button" data-v="medium">medium</button>
+        <button type="button" data-v="high" aria-pressed="true">high</button>
+        <button type="button" data-v="xhigh">xhigh</button>
+        <button type="button" data-v="max">max</button>
+      </div>
+    </div>
+
+    <button class="cta" id="go" type="button" disabled>Generate one-pager PDF</button>
+
+    <div class="disclosure">
+      The deck is sent to the Claude API for scoring and held only while the
+      analysis runs &mdash; nothing is written to disk and no copy is sent
+      anywhere else. The API key stays server&#8209;side.
+    </div>
+  </div>
+
+  <!-- ============ WORKING ============ -->
+  <div class="card hidden" id="view-working">
+    <div class="eyebrow working">Analyzing</div>
+    <h1>Scoring ten <span class="to">conviction stages</span></h1>
+    <p class="lede" id="working-note">Claude reads the whole deck before scoring. This usually takes one to three minutes &mdash; leave this tab open.</p>
+    <div class="track"><i></i></div>
+    <div class="meta">
+      <span id="working-file"></span>
+      <span id="working-elapsed">0s</span>
+    </div>
+  </div>
+
+  <!-- ============ ERROR ============ -->
+  <div class="card hidden" id="view-error">
+    <div class="eyebrow bad">Analysis failed</div>
+    <div class="alert" id="error-text"></div>
+    <div class="btn-row"><button class="btn primary" id="retry" type="button">Try another deck</button></div>
+  </div>
+
+  <!-- ============ RESULT ============ -->
+  <div class="card hidden" id="view-result">
+    <div class="eyebrow">Conviction Ladder</div>
+    <div class="score-hero">
+      <span class="score-num" id="r-score">0</span>
+      <span class="score-den">/ 50</span>
+      <span class="pill" id="r-verdict"></span>
+      <span class="company" id="r-company"></span>
+    </div>
+
+    <table>
+      <thead><tr>
+        <th style="width:34px"></th><th>Stage</th>
+        <th style="text-align:center">Score</th><th style="text-align:right">Status</th>
+      </tr></thead>
+      <tbody id="r-stages"></tbody>
+    </table>
+
+    <dl id="r-diagnosis"></dl>
+
+    <div class="mailnote hidden" id="r-email"></div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="dl-pdf" type="button">Download PDF</button>
+      <button class="btn" id="dl-json" type="button">Download JSON</button>
+      <button class="btn" id="again" type="button">Analyze another</button>
+    </div>
+  </div>
+
+  <footer>Powered by TEN Capital Network</footer>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const MAX_BYTES = {{MAX_BYTES}};
+
+const VERDICT_COLOR = {
+  "Strong Conviction": "#35BEBB",
+  "Advance with Conditions": "#F3A22A",
+  "Borderline": "#F0776C",
+  "Pass": "#EE5A4E",
+};
+const SCORE_COLOR = { 5:"#35BEBB", 4:"#35BEBB", 3:"#F3A22A", 2:"#F0776C", 1:"#EE5A4E" };
+const DIAGNOSIS = [
+  ["conviction_breaks_at", "Conviction breaks at"],
+  ["partner_meeting", "Partner meeting?"],
+  ["biggest_red_flag", "Biggest red flag"],
+  ["highest_leverage", "Highest leverage"],
+  ["increase_p_invest", "To increase P(invest)"],
+];
+
+let file = null, jobId = null, timer = null, effort = "high";
+
+function view(name) {
+  for (const v of ["upload", "working", "error", "result"]) {
+    $("view-" + v).classList.toggle("hidden", v !== name);
+  }
+  $("stage").classList.toggle("wide", name === "result");
+}
+
+function esc(s) {
+  return String(s === null || s === undefined ? "" : s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])
+  );
+}
+
+function fail(msg) { $("error-text").textContent = msg; view("error"); }
+function mb(bytes) { return (bytes / 1048576).toFixed(1); }
+
+/* ---- file selection ---- */
+const drop = $("drop"), input = $("deck-upload");
+
+function choose(f) {
+  if (!f) return;
+  if (!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") {
+    fail(f.name + " is not a PDF. Export the deck to PDF and try again.");
+    return;
+  }
+  if (f.size > MAX_BYTES) {
+    fail(f.name + " is " + mb(f.size) + "MB. The limit is " +
+         Math.round(MAX_BYTES / 1048576) +
+         "MB — re-export the deck at lower image quality.");
+    return;
+  }
+  file = f;
+  drop.classList.add("loaded");
+  $("drop-title").textContent = f.name;
+  $("drop-sub").innerHTML = "<b>" + mb(f.size) + " MB</b> &nbsp;&middot;&nbsp; ready";
+  $("go").disabled = false;
+}
+
+input.addEventListener("change", () => choose(input.files[0]));
+for (const e of ["dragenter", "dragover"]) {
+  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); });
+}
+for (const e of ["dragleave", "drop"]) {
+  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.remove("over"); });
+}
+drop.addEventListener("drop", (ev) => choose(ev.dataTransfer.files[0]));
+
+/* ---- effort segmented control ---- */
+$("effort").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-v]");
+  if (!b) return;
+  effort = b.dataset.v;
+  for (const x of $("effort").querySelectorAll("button")) {
+    x.setAttribute("aria-pressed", String(x === b));
+  }
+});
+
+/* ---- run ---- */
+$("go").addEventListener("click", async () => {
+  if (!file) return;
+  $("go").disabled = true;
+  $("working-file").textContent = file.name;
+  $("working-elapsed").textContent = "0s";
+  view("working");
+
+  const body = new FormData();
+  body.append("deck", file);
+  body.append("effort", effort);
+
+  try {
+    const res = await fetch("/api/analyze", { method: "POST", body });
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* non-JSON error body */ }
+    if (!res.ok) throw new Error(data.detail || ("Server returned " + res.status));
+    jobId = data.id;
+    timer = setInterval(poll, 2000);
+    poll();
+  } catch (e) {
+    $("go").disabled = false;
+    fail(e.message);
+  }
+});
+
+async function poll() {
+  try {
+    const res = await fetch("/api/jobs/" + jobId);
+    if (!res.ok) throw new Error("Server returned " + res.status);
+    const job = await res.json();
+    $("working-elapsed").textContent = Math.round(job.elapsed) + "s";
+    if (job.note) $("working-note").textContent = job.note;
+    if (job.status === "done") { clearInterval(timer); render(job); }
+    else if (job.status === "error") {
+      clearInterval(timer);
+      $("go").disabled = false;
+      fail(job.error);
+    }
+  } catch (e) {
+    clearInterval(timer);
+    $("go").disabled = false;
+    fail("Lost contact with the server: " + e.message);
+  }
+}
+
+function render(job) {
+  const tint = VERDICT_COLOR[job.verdict] || "#F3F6FA";
+  $("r-score").textContent = job.overall_score;
+  $("r-score").style.color = tint;
+  $("r-company").textContent = job.company_name;
+  const pill = $("r-verdict");
+  pill.textContent = job.verdict;
+  pill.style.background = tint;
+
+  $("r-stages").innerHTML = job.stages.map((s) =>
+    '<tr><td class="n">' + s.number + '</td>' +
+    '<td>' + esc(s.name) + '</td>' +
+    '<td class="sc" style="color:' + SCORE_COLOR[s.score] + '">' + s.score + '/5</td>' +
+    '<td class="st" style="color:' + SCORE_COLOR[s.score] + '">' + esc(s.status) + '</td></tr>'
+  ).join("");
+
+  $("r-diagnosis").innerHTML = DIAGNOSIS.map(([k, label]) =>
+    "<dt>" + label + "</dt>" +
+    "<dd" + (k === "biggest_red_flag" ? ' class="flag"' : "") + ">" +
+    esc(job.diagnosis[k] || "—") + "</dd>"
+  ).join("");
+
+  const em = $("r-email");
+  if (job.email) {
+    em.textContent = job.email;
+    em.classList.toggle("warn", job.email.slice(0, 10) === "Not emailed");
+    em.classList.remove("hidden");
+  } else {
+    em.classList.add("hidden");
+  }
+
+  view("result");
+}
+
+$("dl-pdf").addEventListener("click", () => location.assign("/api/jobs/" + jobId + "/report"));
+$("dl-json").addEventListener("click", () => location.assign("/api/jobs/" + jobId + "/analysis"));
+
+function reset() {
+  file = null;
+  jobId = null;
+  input.value = "";
+  drop.classList.remove("loaded");
+  $("drop-title").textContent = "Drop a deck here, or click to choose";
+  $("drop-sub").innerHTML = "<b>.pdf</b> &nbsp;&middot;&nbsp; up to " +
+    Math.round(MAX_BYTES / 1048576) + "&nbsp;MB";
+  $("go").disabled = true;
+  view("upload");
+}
+$("again").addEventListener("click", reset);
+$("retry").addEventListener("click", reset);
+</script>
+</body>
+</html>

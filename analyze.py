@@ -34,6 +34,7 @@ import anthropic
 
 import conviction_ladder as cl
 import engine
+import mailer
 from report_pdf import build_report
 
 # Model output contains typography the Windows console codepage can't encode
@@ -45,7 +46,7 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 def run(pdf_path: Path | None, output_path: Path, json_path: Path | None,
-        effort: str, from_json: Path | None) -> None:
+        effort: str, from_json: Path | None, email: bool = False) -> None:
     if from_json:
         analysis = cl.normalize(json.loads(from_json.read_text(encoding="utf-8")))
     else:
@@ -72,6 +73,18 @@ def run(pdf_path: Path | None, output_path: Path, json_path: Path | None,
     )
     print(f"Conviction breaks at: {analysis['diagnosis']['conviction_breaks_at']}")
     print(f"\nSaved report -> {output_path}")
+
+    if email:
+        # Opt-in on the CLI: a terminal run is usually a local experiment,
+        # and silently mailing the team on every test would be a surprise.
+        try:
+            print(mailer.send_report(
+                analysis, output_path.read_bytes(), report_date,
+                source_filename=(pdf_path.name if pdf_path
+                                 else output_path.name),
+            ))
+        except mailer.MailError as e:
+            print(f"Not emailed - {e}", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -101,6 +114,11 @@ def main(argv: list[str] | None = None) -> int:
         "--effort", default="high", choices=engine.EFFORT_LEVELS,
         help="Model effort level (default: high)",
     )
+    parser.add_argument(
+        "--email", action="store_true",
+        help="Also email the report via Resend (recipient: "
+             f"{mailer.DEFAULT_TO}). Requires RESEND_API_KEY.",
+    )
     args = parser.parse_args(argv)
 
     if args.from_json:
@@ -121,7 +139,8 @@ def main(argv: list[str] | None = None) -> int:
     output = args.output or default_out
 
     try:
-        run(args.pdf, output, args.json_path, args.effort, args.from_json)
+        run(args.pdf, output, args.json_path, args.effort, args.from_json,
+            email=args.email)
     except anthropic.AuthenticationError:
         # A missing key never gets this far — engine.build_client turns that
         # into an AnalysisError. This is the 401: a key that is set but wrong,
