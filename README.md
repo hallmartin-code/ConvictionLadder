@@ -186,6 +186,33 @@ in the UI, and logged to stderr — the analysis is never lost to a mail problem
 On the CLI it is opt-in via `--email`, so local experiments don't mail the team
 on every run.
 
+## Report footer
+
+The PDF carries the TEN Capital house footer defined in the parent
+`CLAUDE.md` — one centred line, Open Sans 7pt:
+
+```
+Investor Conviction Ladder — <Company>    1    Compiled on <date> by TEN Capital Network   [logo]
+```
+
+The logo renders at 0.67in × 0.25in per the standard, and its bottom edge sits
+0.24in from the page edge to clear the unprintable strip on office printers.
+
+Two assets ship in `static/` for this and must stay in the repo, or the footer
+degrades:
+
+| Asset | If missing |
+| --- | --- |
+| `fonts/OpenSans-Regular.ttf` | Falls back to Helvetica — visibly the wrong face |
+| `TEN_Capital_logo_footer.png` | Footer renders text-only, still centred |
+
+Neither failure stops a report rendering. Open Sans is Apache-2.0, so
+redistributing it in the repo is fine.
+
+`FOOTER_CLEARANCE` is what the content frame stops at, derived from the logo
+height rather than hardcoded — reserving more than the logo needs costs body
+copy the space it needs to stay on one page.
+
 ## Brand assets
 
 `static/` holds the favicon set, generated from the TEN Capital circle mark:
@@ -198,6 +225,8 @@ on every run.
 | `icon-512.png`, `favicon-192.png` | Large sizes, e.g. a web manifest |
 | `brand-mark.png` | The logo in the page header, 136px for retina at 34px |
 | `logo-source.png` | The trimmed, squared master the rest were cut from |
+| `TEN_Capital_logo_footer.png` | The wordmark used in the PDF footer |
+| `fonts/OpenSans-Regular.ttf` | Footer type, per the house standard |
 
 It's mounted at `/static` **without** the auth gate — the browser fetches the
 favicon before you've logged in, and gating it just yields a blank tab icon on
@@ -248,9 +277,11 @@ for all ten stages, sorted into canonical order, totalled, and rendered by
   the analyzer scores against the same rubric as the manual workflow.
 - **Verdict bands.** 43–50 Strong Conviction · 36–42 Advance with Conditions ·
   28–35 Borderline · ≤27 Pass.
-- **One page, always.** The renderer shrinks body type until the report fits on
-  a single page, so a verbose analysis is never clipped mid-word or spilled
-  onto page two.
+- **One page.** The renderer steps body type down through `FIT_SCALES` until
+  the report fits a single page, so a verbose analysis is never clipped
+  mid-word. It holds comfortably to roughly twice the prompt's 200-char
+  per-field guidance; past that it uses a second page rather than shrink
+  below readable type.
 - **Upload limit** is 20MB — Anthropic caps a request at 32MB and base64
   inflates by a third. Oversized or non-PDF uploads are rejected before any
   API call is made.

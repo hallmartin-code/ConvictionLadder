@@ -43,6 +43,14 @@ there, not in `web.py` or `analyze.py`, so the two stay in step.
   already been written.
 - **Secrets live in `.env` (gitignored) or the platform's variables tab.** Never
   hardcode a key, never log one, never accept one from the client.
+- **The PDF footer follows the house standard**, not an invented one. The
+  pattern, 7pt Open Sans and the 0.67x0.25in logo are specified in the parent
+  `CLAUDE.md`; `_draw_ten_footer` implements it. Both assets live in `static/`
+  and both have fallbacks, because a missing file must not stop a report.
+- **Don't reserve more bottom margin than the footer needs.** The content frame
+  stops at `FOOTER_CLEARANCE`, derived from the logo height. Padding it costs
+  body copy the space it needs to stay on one page — 10pt of slack was enough
+  to push a verbose analysis onto page two.
 - **The report is one page.** `build_report` shrinks body type until it fits
   (`FIT_SCALES`). If you add content to the layout, re-run the length stress
   test before assuming it still fits.
