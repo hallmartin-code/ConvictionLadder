@@ -49,6 +49,10 @@ there, not in `web.py` or `analyze.py`, so the two stay in step.
 
 ## Web app conventions
 
+- **The logo is a raster asset, not inline SVG.** The header mark loads
+  `/static/brand-mark.png`. A hand-traced SVG of the TEN Capital circle
+  mark rendered wrong (stub arcs, misaligned dots) — don't reintroduce one.
+
 - **`/static` is deliberately unauthenticated.** The favicon is fetched before
   login; gating it only produces a blank tab icon on the password prompt. Keep
   it to brand assets — anything sensitive does not belong there.

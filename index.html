@@ -261,21 +261,15 @@
 <div class="stage" id="stage">
 
   <div class="brand">
-    <svg class="brand-mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M50 6 C64 6 74 16 74 16" stroke="var(--amber)" stroke-width="11" stroke-linecap="round" fill="none"/>
-      <path d="M76 66 C76 82 63 92 63 92" stroke="var(--teal)" stroke-width="11" stroke-linecap="round" fill="none"/>
-      <path d="M24 66 C24 82 37 92 37 92" stroke="var(--coral)" stroke-width="11" stroke-linecap="round" fill="none" transform="rotate(180 50 79)"/>
-      <circle cx="50" cy="20" r="11" fill="var(--amber)"/>
-      <circle cx="78" cy="68" r="11" fill="var(--teal)"/>
-      <circle cx="22" cy="68" r="11" fill="var(--coral)"/>
-    </svg>
+    <img class="brand-mark" src="/static/brand-mark.png"
+         alt="TEN Capital Network" width="34" height="34">
     <div class="brand-word">Ten Capital<span>Network</span></div>
   </div>
 
   <!-- ============ UPLOAD ============ -->
   <div class="card" id="view-upload">
-    <div class="eyebrow">Deck Analyzer</div>
-    <h1>Pitch Deck<span class="arrow">&rarr;</span><span class="to">Investor One&#8209;Pager</span></h1>
+    <div class="eyebrow">Conviction Ladder</div>
+    <h1>Pitch Deck<span class="arrow">&rarr;</span><span class="to">Conviction&nbsp;Ladder</span></h1>
     <p class="lede">Upload a pitch deck and get a polished single-page investor PDF, scored against the TEN Capital Conviction Ladder by Claude.</p>
 
     <label class="dropzone" id="drop" for="deck-upload">
@@ -301,7 +295,7 @@
       </div>
     </div>
 
-    <button class="cta" id="go" type="button" disabled>Generate one-pager PDF</button>
+    <button class="cta" id="go" type="button" disabled>Run Conviction Ladder</button>
 
     <div class="disclosure">
       The deck is sent to the Claude API for scoring and held only while the

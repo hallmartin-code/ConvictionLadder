@@ -196,6 +196,7 @@ on every run.
 | `favicon-16.png`, `favicon-32.png` | Modern browser tab icons |
 | `apple-touch-icon.png` | iOS home screen, 180×180 on the app's navy |
 | `icon-512.png`, `favicon-192.png` | Large sizes, e.g. a web manifest |
+| `brand-mark.png` | The logo in the page header, 136px for retina at 34px |
 | `logo-source.png` | The trimmed, squared master the rest were cut from |
 
 It's mounted at `/static` **without** the auth gate — the browser fetches the
@@ -203,6 +204,10 @@ favicon before you've logged in, and gating it just yields a blank tab icon on
 the password prompt. Nothing in the directory is sensitive. `/favicon.ico` is
 also served from the root, for clients that probe there instead of reading the
 `<link>` tags.
+
+The header mark is an `<img>` pointing at `brand-mark.png`, not inline
+SVG. An earlier hand-traced SVG approximation rendered incorrectly; use
+the real raster rather than re-tracing it.
 
 To regenerate from a new master, trim to the artwork's bounding box before
 downscaling — the source PNG carries transparent padding that swallows the
