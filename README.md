@@ -220,12 +220,13 @@ copy the space it needs to stay on one page.
 
 | File | Used for |
 | --- | --- |
+| `favicon.png` | The supplied 236×236 icon, unmodified; master for the rest |
 | `favicon.ico` | Multi-resolution (16/32/48) for browser tabs and Windows |
 | `favicon-16.png`, `favicon-32.png` | Modern browser tab icons |
 | `apple-touch-icon.png` | iOS home screen, 180×180 on the app's navy |
 | `icon-512.png`, `favicon-192.png` | Large sizes, e.g. a web manifest |
 | `brand-mark.png` | The logo in the page header, 136px for retina at 34px |
-| `logo-source.png` | The trimmed, squared master the rest were cut from |
+| `logo-source.png` | `favicon.png` trimmed and squared, with a small margin |
 | `TEN_Capital_logo_footer.png` | The wordmark used in the PDF footer |
 | `fonts/OpenSans-Regular.ttf` | Footer type, per the house standard |
 
