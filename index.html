@@ -280,8 +280,8 @@
         </svg>
       </div>
       <div class="dropzone-title" id="drop-title">Drop a deck here, or click to choose</div>
-      <div class="dropzone-sub" id="drop-sub"><b>.pdf</b> &nbsp;&middot;&nbsp; up to {{MAX_MB}}&nbsp;MB</div>
-      <input class="file-input" type="file" id="deck-upload" accept="application/pdf,.pdf">
+      <div class="dropzone-sub" id="drop-sub"><b>.pdf</b> or <b>.pptx</b> &nbsp;&middot;&nbsp; up to {{MAX_MB}}&nbsp;MB</div>
+      <input class="file-input" type="file" id="deck-upload" accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint">
     </label>
 
     <div class="controls">
@@ -359,6 +359,11 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const MAX_BYTES = {{MAX_BYTES}};
+const DECK_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-powerpoint",
+];
 
 const VERDICT_COLOR = {
   "Strong Conviction": "#35BEBB",
@@ -399,8 +404,8 @@ const drop = $("drop"), input = $("deck-upload");
 
 function choose(f) {
   if (!f) return;
-  if (!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") {
-    fail(f.name + " is not a PDF. Export the deck to PDF and try again.");
+  if (!/\.(pdf|pptx|ppt)$/i.test(f.name) && !DECK_TYPES.includes(f.type)) {
+    fail(f.name + " is not a PDF or PowerPoint file. Upload a .pdf or .pptx and try again.");
     return;
   }
   if (f.size > MAX_BYTES) {
@@ -524,7 +529,7 @@ function reset() {
   input.value = "";
   drop.classList.remove("loaded");
   $("drop-title").textContent = "Drop a deck here, or click to choose";
-  $("drop-sub").innerHTML = "<b>.pdf</b> &nbsp;&middot;&nbsp; up to " +
+  $("drop-sub").innerHTML = "<b>.pdf</b> or <b>.pptx</b> &nbsp;&middot;&nbsp; up to " +
     Math.round(MAX_BYTES / 1048576) + "&nbsp;MB";
   $("go").disabled = true;
   view("upload");

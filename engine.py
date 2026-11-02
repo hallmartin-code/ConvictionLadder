@@ -2,15 +2,21 @@
 Conviction Ladder analysis engine.
 
 Shared by the CLI (`analyze.py`) and the web app (`web.py`): takes pitch deck
-PDF bytes, calls the Claude API with a structured-output schema, and returns a
-normalized analysis dict ready for `report_pdf.build_report`.
+bytes (PDF, or PowerPoint converted to PDF), calls the Claude API with a
+structured-output schema, and returns a normalized analysis dict ready for
+`report_pdf.build_report`.
 """
 
 from __future__ import annotations
 
 import base64
+import io
 import json
 import os
+import shutil
+import subprocess
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import Callable
 
@@ -49,6 +55,13 @@ FALLBACK_MODELS = [{"model": "claude-opus-4-8"}]
 MAX_PDF_BYTES = 20 * 1024 * 1024
 
 EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"]
+
+# The API reads PDFs, not PowerPoint, so .pptx/.ppt decks are rendered to PDF
+# with headless LibreOffice first. That keeps charts and layout visible to the
+# model, which a text extraction would lose. Railway gets LibreOffice from
+# nixpacks.toml; SOFFICE_PATH overrides discovery.
+CONVERT_TIMEOUT_SECONDS = 180
+_WINDOWS_SOFFICE = Path(r"C:\Program Files\LibreOffice\program\soffice.exe")
 
 
 class AnalysisError(RuntimeError):
@@ -111,14 +124,39 @@ def build_client(api_key: str | None = None) -> anthropic.Anthropic:
         raise AnalysisError(no_credentials_message()) from e
 
 
-def validate_pdf(data: bytes, filename: str = "deck.pdf") -> None:
-    """Reject obvious non-PDFs and oversized uploads before spending a call."""
+def deck_kind(data: bytes) -> str | None:
+    """Identify a deck by its bytes: "pdf", "pptx", "ppt", or None.
+
+    Sniffed rather than trusted from the filename or browser MIME type, which
+    are both whatever the client says they are.
+    """
+    if data.startswith(b"%PDF"):
+        return "pdf"
+    if data.startswith(b"PK"):
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as z:
+                if "ppt/presentation.xml" in z.namelist():
+                    return "pptx"
+        except zipfile.BadZipFile:
+            return None
+        return None
+    if data.startswith(bytes.fromhex("d0cf11e0a1b11ae1")):  # OLE2: legacy .ppt
+        return "ppt"
+    return None
+
+
+def validate_deck(data: bytes, filename: str = "deck.pdf") -> str:
+    """Reject unsupported or oversized uploads before spending a call.
+
+    Returns the deck kind from `deck_kind`.
+    """
     if not data:
         raise AnalysisError("The uploaded file is empty.")
-    if not data.startswith(b"%PDF"):
+    kind = deck_kind(data)
+    if kind is None:
         raise AnalysisError(
-            f"{filename} does not look like a PDF. Export the deck to PDF and "
-            "try again."
+            f"{filename} is not a PDF or PowerPoint file. Upload a .pdf or "
+            ".pptx and try again."
         )
     if len(data) > MAX_PDF_BYTES:
         mb = len(data) / (1024 * 1024)
@@ -127,6 +165,69 @@ def validate_pdf(data: bytes, filename: str = "deck.pdf") -> None:
             f"{MAX_PDF_BYTES // (1024 * 1024)}MB — re-export the deck at lower "
             "image quality and try again."
         )
+    return kind
+
+
+def find_soffice() -> str | None:
+    override = (os.getenv("SOFFICE_PATH") or "").strip()
+    if override:
+        return override
+    found = shutil.which("soffice") or shutil.which("libreoffice")
+    if found:
+        return found
+    return str(_WINDOWS_SOFFICE) if _WINDOWS_SOFFICE.exists() else None
+
+
+def convert_to_pdf(data: bytes, kind: str) -> bytes:
+    """Render a PowerPoint deck to PDF bytes with headless LibreOffice."""
+    soffice = find_soffice()
+    if soffice is None:
+        raise AnalysisError(
+            "PowerPoint conversion is unavailable: LibreOffice is not "
+            "installed on this server. Export the deck to PDF and upload that "
+            "instead."
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        src = tmp_path / f"deck.{kind}"
+        src.write_bytes(data)
+        # A private profile per call: concurrent conversions sharing the
+        # default profile lock each other out and fail silently.
+        profile = (tmp_path / "profile").as_uri()
+        try:
+            subprocess.run(
+                [
+                    soffice, f"-env:UserInstallation={profile}",
+                    "--headless", "--norestore",
+                    "--convert-to", "pdf", "--outdir", str(tmp_path), str(src),
+                ],
+                capture_output=True,
+                timeout=CONVERT_TIMEOUT_SECONDS,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as e:
+            raise AnalysisError(
+                "Converting the PowerPoint deck to PDF timed out. Export it to "
+                "PDF and upload that instead."
+            ) from e
+
+        out = tmp_path / "deck.pdf"
+        if not out.exists() or not out.read_bytes().startswith(b"%PDF"):
+            raise AnalysisError(
+                "The PowerPoint deck could not be converted to PDF. It may be "
+                "corrupt or password-protected — export it to PDF and upload "
+                "that instead."
+            )
+        pdf = out.read_bytes()
+
+    if len(pdf) > MAX_PDF_BYTES:
+        raise AnalysisError(
+            f"The deck converts to a {len(pdf) / (1024 * 1024):.1f}MB PDF, over "
+            f"the {MAX_PDF_BYTES // (1024 * 1024)}MB limit. Compress its images "
+            "and try again."
+        )
+    return pdf
 
 
 def _request_kwargs(pdf_b64: str, effort: str) -> dict:
@@ -214,16 +315,28 @@ def call_model(
         raise AnalysisError(f"The model returned unparseable JSON: {e}") from e
 
 
-def analyze_pdf_bytes(
+def analyze_deck_bytes(
     data: bytes,
     effort: str = "high",
     api_key: str | None = None,
     on_progress: Callable[[], None] | None = None,
     on_note: Callable[[str], None] | None = None,
 ) -> dict:
-    """Validate, analyze, and normalize. Returns the report-ready dict."""
-    validate_pdf(data)
+    """Validate, convert if needed, analyze, and normalize.
+
+    Accepts PDF or PowerPoint bytes. Returns the report-ready dict.
+    """
+    kind = validate_deck(data)
     client = build_client(api_key)
+    if kind != "pdf":
+        if on_note:
+            on_note("Converting the PowerPoint deck to PDF…")
+        data = convert_to_pdf(data, kind)
+        if on_note:
+            on_note(
+                "Converted. Claude is reading the deck — this usually takes "
+                "one to three minutes."
+            )
     pdf_b64 = base64.standard_b64encode(data).decode("utf-8")
     raw = call_model(client, pdf_b64, effort, on_progress, on_note)
     return cl.normalize(raw)

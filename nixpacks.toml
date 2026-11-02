@@ -1,0 +1,5 @@
+# LibreOffice renders uploaded .pptx/.ppt decks to PDF (engine.convert_to_pdf).
+# Impress alone is enough for headless conversion. Liberation and Carlito are
+# metric-compatible stand-ins for Arial/Calibri, so slide text keeps its layout.
+[phases.setup]
+aptPkgs = ["...", "libreoffice-impress", "fonts-liberation", "fonts-crosextra-carlito"]

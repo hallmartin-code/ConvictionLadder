@@ -111,6 +111,7 @@ python analyze.py deck.pdf                          # analyze and render
 python analyze.py deck.pdf -o "Report.pdf"          # choose the output path
 python analyze.py deck.pdf --json analysis.json     # also save the raw scores
 python analyze.py deck.pdf --effort max             # deepest analysis, slower
+python analyze.py deck.pptx                          # PowerPoint (needs LibreOffice)
 python analyze.py --from-json analysis.json         # re-render, no API call
 ```
 
@@ -133,7 +134,7 @@ Every endpoint except `/healthz` is behind the same auth gate.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/` | Upload page |
-| `POST` | `/api/analyze` | multipart: `deck` (PDF), `effort`. Returns `202 {"id"}` |
+| `POST` | `/api/analyze` | multipart: `deck` (PDF or PowerPoint), `effort`. Returns `202 {"id"}` |
 | `GET` | `/api/jobs/{id}` | Status, and on completion the scores and diagnosis |
 | `GET` | `/api/jobs/{id}/report` | The PDF report |
 | `GET` | `/api/jobs/{id}/analysis` | The raw analysis JSON |
@@ -264,6 +265,13 @@ use.
 
 ## How it works
 
+A PowerPoint deck (`.pptx` or legacy `.ppt`) is first rendered to PDF with
+headless LibreOffice, so the model sees the slides as laid out — charts,
+tables and images included. On Railway, `nixpacks.toml` installs LibreOffice;
+locally, install it from <https://www.libreoffice.org> (or point
+`SOFFICE_PATH` at `soffice`). Without it, PDF uploads still work and
+PowerPoint uploads fail with a clear message.
+
 The deck is sent as a PDF document block to Claude Opus 5 with a
 [structured output schema](conviction_ladder.py), so the model returns
 validated JSON rather than prose that needs parsing. The response is checked
@@ -283,7 +291,9 @@ for all ten stages, sorted into canonical order, totalled, and rendered by
   per-field guidance; past that it uses a second page rather than shrink
   below readable type.
 - **Upload limit** is 20MB — Anthropic caps a request at 32MB and base64
-  inflates by a third. Oversized or non-PDF uploads are rejected before any
+  inflates by a third. It applies to the upload and again to the converted PDF
+  for PowerPoint decks. Oversized uploads, and anything that isn't a PDF or
+  PowerPoint file (checked by content, not extension), are rejected before any
   API call is made.
 - **Grounding.** The prompt forbids importing outside market knowledge and
   requires evidence to cite what the deck actually shows. Run the Validation

@@ -1,7 +1,7 @@
 """
 Investor Conviction Ladder — pitch deck analyzer (CLI).
 
-    Upload PDF -> score 10 conviction stages -> one-page branded PDF report
+    Upload PDF or PowerPoint -> score 10 conviction stages -> one-page branded PDF report
 
 Usage
 -----
@@ -9,6 +9,7 @@ Usage
     python analyze.py deck.pdf --output "Company - Conviction Ladder.pdf"
     python analyze.py deck.pdf --json analysis.json
     python analyze.py deck.pdf --effort max
+    python analyze.py deck.pptx                     # PowerPoint, via LibreOffice
     python analyze.py --from-json analysis.json      # re-render, no API call
 
 Requirements
@@ -51,7 +52,7 @@ def run(pdf_path: Path | None, output_path: Path, json_path: Path | None,
         analysis = cl.normalize(json.loads(from_json.read_text(encoding="utf-8")))
     else:
         print("Scoring 10 conviction stages ", end="", file=sys.stderr, flush=True)
-        analysis = engine.analyze_pdf_bytes(
+        analysis = engine.analyze_deck_bytes(
             pdf_path.read_bytes(),
             effort=effort,
             on_progress=lambda: print(".", end="", file=sys.stderr, flush=True),
@@ -96,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "pdf", type=Path, nargs="?",
-        help="Path to the pitch deck PDF (omit only with --from-json)",
+        help="Path to the pitch deck: .pdf, .pptx or .ppt (omit only with --from-json)",
     )
     parser.add_argument(
         "--output", "-o", type=Path, default=None,
@@ -127,11 +128,11 @@ def main(argv: list[str] | None = None) -> int:
         default_out = args.from_json.with_suffix(".pdf")
     else:
         if args.pdf is None:
-            parser.error("a pitch deck PDF is required (or pass --from-json)")
+            parser.error("a pitch deck is required (or pass --from-json)")
         if not args.pdf.exists():
             parser.error(f"File not found: {args.pdf}")
-        if args.pdf.suffix.lower() != ".pdf":
-            parser.error("Input must be a .pdf file")
+        if args.pdf.suffix.lower() not in (".pdf", ".pptx", ".ppt"):
+            parser.error("Input must be a .pdf, .pptx or .ppt file")
         default_out = args.pdf.with_name(
             f"{args.pdf.stem} - Conviction Ladder.pdf"
         )

@@ -1,7 +1,7 @@
 """
 Investor Conviction Ladder — web app.
 
-Upload a pitch deck in the browser, the server calls the Claude API, and the
+Upload a pitch deck (PDF or PowerPoint) in the browser, the server calls the Claude API, and the
 one-page PDF report comes back as a download.
 
 Run locally:
@@ -99,6 +99,7 @@ def require_auth(credentials: HTTPBasicCredentials | None = Depends(_basic)) -> 
 class Job:
     id: str
     filename: str
+    source: str = ""            # uploaded name, extension included
     status: str = "queued"        # queued | running | done | error
     note: str | None = None
     error: str | None = None
@@ -152,7 +153,7 @@ def sweep_jobs() -> None:
 
 
 def safe_stem(filename: str) -> str:
-    stem = re.sub(r"\.pdf$", "", filename or "deck", flags=re.I)
+    stem = re.sub(r"\.(pdf|pptx|ppt)$", "", filename or "deck", flags=re.I)
     stem = re.sub(r"[^A-Za-z0-9 _.-]+", "", stem).strip() or "deck"
     return stem[:80]
 
@@ -175,7 +176,7 @@ async def run_job(job: Job, data: bytes, effort: str) -> None:
         try:
             analysis = await loop.run_in_executor(
                 None,
-                lambda: engine.analyze_pdf_bytes(
+                lambda: engine.analyze_deck_bytes(
                     data, effort=effort, on_progress=bump, on_note=note
                 ),
             )
@@ -195,7 +196,7 @@ async def run_job(job: Job, data: bytes, effort: str) -> None:
                         None,
                         lambda: mailer.send_report(
                             analysis, job.pdf, report_date,
-                            source_filename=job.filename + ".pdf",
+                            source_filename=job.source or job.filename,
                         ),
                     )
                 except mailer.MailError as e:
@@ -264,12 +265,16 @@ async def start_analysis(
 
     data = await deck.read()
     try:
-        engine.validate_pdf(data, deck.filename or "deck.pdf")
+        engine.validate_deck(data, deck.filename or "deck")
     except engine.AnalysisError as e:
         raise HTTPException(400, str(e)) from e
 
     sweep_jobs()
-    job = Job(id=uuid.uuid4().hex[:12], filename=safe_stem(deck.filename or "deck"))
+    job = Job(
+        id=uuid.uuid4().hex[:12],
+        filename=safe_stem(deck.filename or "deck"),
+        source=deck.filename or "",
+    )
     JOBS[job.id] = job
     task = asyncio.create_task(run_job(job, data, effort))
     _TASKS.add(task)

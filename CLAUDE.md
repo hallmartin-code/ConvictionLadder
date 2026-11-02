@@ -17,7 +17,7 @@ document standards and the conversational prompt suite.
 - `report_pdf.py` — the reportlab layout
 - `sample_analysis.json` — fixture for rendering without an API key
 
-Both front ends go through `engine.analyze_pdf_bytes`. Put analysis logic
+Both front ends go through `engine.analyze_deck_bytes`. Put analysis logic
 there, not in `web.py` or `analyze.py`, so the two stay in step.
 
 ## Conventions
@@ -25,6 +25,12 @@ there, not in `web.py` or `analyze.py`, so the two stay in step.
 - **Model.** `claude-opus-5`, streamed, with adaptive thinking (the default on
   Opus 5) and `output_config.effort`. Don't add `temperature`, `top_p`, or
   `thinking.budget_tokens` — all three are rejected on this model.
+- **PowerPoint is converted, not parsed.** The API reads PDFs only, so
+  `.pptx`/`.ppt` uploads go through headless LibreOffice (`convert_to_pdf`)
+  and the model sees rendered slides, charts included. Railway installs it via
+  `nixpacks.toml`. Formats are sniffed from bytes (`deck_kind`), never trusted
+  from the filename. Each conversion gets its own LibreOffice profile —
+  sharing the default one makes concurrent jobs fail.
 - **Structured output, not parsing.** The analysis comes back through
   `output_config.format` against `ANALYSIS_SCHEMA`. If you add a field, add it
   to the schema and to `normalize()`, not to a regex.
@@ -96,6 +102,6 @@ python analyze.py --from-json sample_analysis.json -o out.pdf
 
 That exercises the whole render path — schema normalization, scoring totals,
 verdict banding, and layout — with no network call. For the web flow, stub
-`engine.analyze_pdf_bytes` and drive the app with `fastapi.testclient`; use it
+`engine.analyze_deck_bytes` and drive the app with `fastapi.testclient`; use it
 as a context manager (`with TestClient(app) as c:`) or the background job never
 finishes, because each request otherwise gets its own short-lived event loop.
