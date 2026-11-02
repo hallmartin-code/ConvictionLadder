@@ -216,6 +216,11 @@ copy the space it needs to stay on one page.
 
 ## Brand assets
 
+The page's tab icon (32px) and touch icon (180px) are embedded in `index.html`
+as base64 `data:` URIs, the same way the Full Deck Analysis app does it, so
+the browser doesn't have to fetch a separate file. The files below still back
+`/favicon.ico` and anything that links to them directly.
+
 `static/` holds the favicon set, generated from the TEN Capital circle mark:
 
 | File | Used for |
